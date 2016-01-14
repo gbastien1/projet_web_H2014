@@ -1,6 +1,10 @@
-# 8GIF128 H2015
+# Projet de web avec Node.js
+## Hiver 2014
 
-Bienvenue sur la page du cours du 8GIF128, Conception de sites web
-Les slides du cours sont sur Moodle
-http://moodle.uqac.ca/
+Générateur de graphe, 
+algorithme du plus court chemin, 
+algoritme de l'arbre couvrant minimal,
+vérification de la connectivité du graphe
+
+Avec un serveur web node.js
 
