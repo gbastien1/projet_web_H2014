@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>M&eacute;ga projet super cool!</title>
+
+		<link href='StyleServices.css' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" type="text/css" href="designServices.css">
+		<link href='http://fonts.googleapis.com/css?family=Roboto+Condensed' rel='stylesheet' type='text/css'>
+
+		<!-- BOOTSTRAP -->
+		<!-- Latest compiled and minified CSS -->
+		<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+		<!-- jQuery library -->
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+		<!-- Latest compiled JavaScript -->
+		<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
+		<script src="springy.js"></script>
+		<script src="springyui.js"></script>
+	</head>
+  
+	<body>
+		<header class="jumbotron" id="header">
+		
+			<p id="sommets" class="p-text">
+				Entrez le nombre de sommets:
+				<input type="text" id="TextBox1" name="NbSommets" style="width: 50px; height: 22px;"></input>
+			</p>
+				
+			<p id="densite" class="p-text">
+				Entrez la densit&eacute; (de 0 &agrave; 100):		
+				<input type="text" id="TextBox2" name="Densite" style="width: 50px; height: 22px;"></input>	
+			</p>
+
+			<p id="shortpath" class="p-text">
+				Entrez le sommet &agrave; tester pour trouver les chemins les plus courts:
+				<input type="text" id="TextBox3" name="ShortPath" style="width: 50px; height: 22px;"></input>
+			</p>
+		</header>
+			<p>
+				<a onclick="Serv1.envoyer()" class="a-btn" id="bouton1">
+					<span class="a-btn-symbol"><img src="roue.png"></span>
+					<span class="a-btn-text">GO!</span> 
+					<span class="a-btn-slide-text">G&eacute;n&eacute;rer le graphe!</span>
+				</a>
+
+				<a onclick="ShortestPath()" class="a-btn" id="bouton2">
+					<span class="a-btn-symbol"><img src="roue.png"></span>
+					<span class="a-btn-text">Shortest Path</span> 
+					<span class="a-btn-slide-text">Plus court chemin</span>
+				</a>
+
+				<a onclick="MST()" class="a-btn" id="bouton3">
+					<span class="a-btn-symbol"><img src="roue.png"></span>
+					<span class="a-btn-text">MST</span> 
+					<span class="a-btn-slide-text">Plus petit arbre</span>
+				</a>
+
+				<a onclick="location.reload();" class="a-btn" id="bouton4">
+					<span class="a-btn-symbol"><img src="roue.png"></span>
+					<span class="a-btn-text">R&eacute;initialiser</span> 
+					<span class="a-btn-slide-text">Recommencer le graphe</span>
+				</a>
+			</p>
+
+			<p id="NonConnecte" class="p-text">Le graphe n'est pas connect&eacute;! Veuillez r&eacute;initialiser.</p>
+			<p><canvas id="springy" width="1300" height="700" /></p>
+			<p><canvas id="springyMST" width="650" height="700"/></p>
+			<p id="InfosShortestPath"></p>
+
+
+
+
+			<!-- Javascript -->
+			<script>
+				var Aretes = [];
+				var AretesMST = [];
+				var Chiffre = 0;
+				var Elements = [];
+				var Graph = new Springy.Graph();
+				var GraphMST = new Springy.Graph();				
+				var Ligne1 = [];
+				var Lignes = [];
+				var LignesMST = [];
+				var LignesShortestPath = [];
+				var Service = 1;
+				var Serv1;
+				var Serv2;
+				var Serv3;
+				var Sommets = [];
+				var SommetsMST = [];
+				var Variable = 0;
+
+				var Canvas1 = document.getElementById("springy");
+	    		var Canvas2 = document.getElementById("springyMST");
+	    		var Paragraphe = document.getElementById("InfosShortestPath");
+
+				function webchaussette()
+				{
+					if(Service == 1)
+						this.ws = new WebSocket('ws://localhost:8080/');
+					else if(Service == 2)
+						this.ws = new WebSocket('ws://localhost:8060/');	
+					else if(Service == 3)
+						this.ws = new WebSocket('ws://localhost:8070/');
+
+					this.ws.onopen = function() 
+					{
+
+	      			};
+	      
+					this.ws.onclose = function() 
+					{
+						if(Service == 1)
+						{
+							ConstruireGraph();
+						}
+
+						else if(Service == 2)
+	        			{
+							AfficherShortestPath();
+	        			}
+	        				
+	        			else if(Service == 3)
+	        			{
+							ConstruireGraphMST();
+	        			}
+	     			};
+	      
+					this.ws.onmessage = function(event) 
+					{
+						if(Service == 1)
+	        			{
+	        				var json = (event.data);
+	        				Lignes.push(json);
+	        			}
+
+	        			else if(Service == 2)
+	        			{
+	        				var json = (event.data);
+	        				LignesShortestPath += json;
+	        				LignesShortestPath += '\n';
+	        			}
+
+	        			else if(Service == 3)
+	        			{
+	        				var json = (event.data);
+	        				LignesMST.push(json);
+	        				Chiffre++;
+	        			}
+	       			}
+
+					this.send_data = function(d, d2)
+	      			{
+	      				if(Service == 1)
+	      				{
+	      					this.ws.send(d);
+	        				this.ws.send(d2);
+	      				}
+	      				else if(Service == 2)
+	      				{
+	      					this.ws.send(d);
+	      				}
+	      			}
+
+					this.envoyer = function()
+	      			{
+	      				if(Service == 1)
+	      				{
+		          			var DonneeNbSommets = document.getElementById("TextBox1").value;
+		          			var DonneeDensite = document.getElementById("TextBox2").value;
+		          			this.send_data(DonneeNbSommets, DonneeDensite);
+		          		}
+		          		else if(Service == 2)
+		          		{
+		          			var SommetTest = document.getElementById("TextBox3").value;
+		          			this.send_data(SommetTest, SommetTest);
+		          		}
+	     			}
+	      
+					this.fermer = function()
+	      			{
+	          			this.ws.close();
+	      			}
+				}
+
+				function ConstruireGraph()
+				{
+					Ligne1 = Lignes[1].split(" ");
+
+			       	for(var i = 0; i < Ligne1[0]; i++)
+			       		Sommets.push(i.toString());
+			        	
+			        for(var i = 0; i < Ligne1[1]; i++)
+		        	{
+		        		Elements = Lignes[i+2].split(" ");
+		        		Aretes.push([Elements[0].toString(), Elements[1].toString(), 
+		        			{directional: false, label: Elements[2].toString(), color: RandomCouleur()}]);
+		        	}
+
+		        	var graphJSON = {"nodes": Sommets, "edges": Aretes};
+					Graph.loadJSON(graphJSON);
+
+					if (Service != 3)
+					{
+						document.getElementById("bouton1").style.display='none';
+						document.getElementById("bouton2").style.display='inline-block';
+						document.getElementById("bouton3").style.display='inline-block';
+						document.getElementById("bouton4").style.display='inline-block';
+						document.getElementById("densite").style.display='none';
+						document.getElementById("sommets").style.display='none';
+						document.getElementById("shortpath").style.display='inline';
+
+						if(Lignes[i+2] == "2000")
+			        	{
+							document.getElementById("bouton2").style.display='none';
+							document.getElementById("bouton3").style.display='none';
+							document.getElementById("shortpath").style.display='none';
+							document.getElementById("NonConnecte").style.display='inline';
+			        	}
+			        }
+				}
+
+				function ConstruireGraphMST()
+				{	
+					var FaitPartieMST = false;
+
+			       	for(var i = 0; i < Ligne1[0]; i++)
+			       		SommetsMST.push(i.toString());
+			        	
+			        for(var i = 0; i < Ligne1[1]; i++)
+		        	{
+		        		Elements = Lignes[i+2].split(" ");
+		        		for(var j = 0; j < Chiffre; j++)
+		        			if(Lignes[i+2] == LignesMST[j])
+		        				FaitPartieMST = true
+
+		        		if(FaitPartieMST)
+		        			AretesMST.push([Elements[0].toString(), Elements[1].toString(), 
+		        				{directional: false, label: Elements[2].toString(), color: '#000000'}]);
+
+		        		FaitPartieMST = false;
+		        	}
+
+		        	var graphJSON = {"nodes": SommetsMST, "edges": AretesMST};
+					GraphMST.loadJSON(graphJSON);
+				}
+
+				function RandomCouleur()
+				{
+					var Choix = '0123456789ABCDE'.split('');
+	    			var Couleur = '#';
+	    			
+	    			for (var j = 0; j < 6; j++ ) 
+	        			Couleur += Choix[Math.floor(Math.random() * 15)];
+	        		return Couleur;
+	    		}
+
+	    		function ShortestPath()
+	    		{
+	    			Service = 2;
+	    			Serv2 = new webchaussette();
+	    			setTimeout(FonctionQuiLaisseWSOuvrir, 100);
+	    			document.getElementById("InfosShortestPath").innerHTML = '';
+	    			LignesShortestPath = [];
+	    		}
+
+	    		function AfficherShortestPath()
+	    		{
+	    			Canvas2.style.display = 'none';
+        			Paragraphe.style.display = 'inline-block';
+        			Canvas1.style.float = 'left';
+	    			Canvas1.width = 650;
+	    			LignesShortestPath = LignesShortestPath.replace(/\n/g, "<br/>");
+        			Paragraphe.innerHTML = LignesShortestPath;
+	    		}
+
+	    		function MST()
+	    		{
+	    			Canvas2.style.display = 'inline-block';
+	    			Paragraphe.style.display = 'none';
+	    			Canvas1.style.float = 'left';
+	    			Canvas2.style.float = 'right';
+	    			Canvas1.width = 650;
+	    			
+	    			if(Variable == 0)
+	    			{
+	    				Service = 3;
+						Serv3 = new webchaussette();
+						Serv3.envoyer();
+						Variable++;
+	    			}
+	    		}
+
+	    		function FonctionQuiLaisseWSOuvrir()
+	    		{
+	    			Serv2.envoyer();
+	    		}
+
+				Serv1 = new webchaussette();
+
+				jQuery(function()
+				{
+	  				var springy = window.springy = jQuery('#springy').springy({graph: Graph});
+	  				var springyMST = window.springy = jQuery('#springyMST').springy({graph: GraphMST});
+				});
+			</script>	
+	</body>
+</html>
